@@ -1,0 +1,28 @@
+version: '3'
+services:
+   db:
+    image: mcr.microsoft.com/mssql/server
+    environment:
+      SA_PASSWORD: ${SA_PASSWORD}
+      ACCEPT_EULA: 'Y'
+    ports:
+      - 1401:1433
+    healthcheck:
+      test: [ "CMD", "/opt/mssql-tools/bin/sqlcmd", "-U", "sa", "-P", "${SA_PASSWORD}", "-Q", "select 1"]
+      interval: 10s
+      retries: 10
+
+   octopus:
+    image: octopusdeploy/octopusdeploy:latest
+    environment:
+       ACCEPT_EULA: "Y"
+       OctopusAdminUsername: "${OCTOPUS_ADMIN_USERNAME}"
+       OctopusAdminPassword: "${OCTOPUS_ADMIN_PASSWORD}"
+       DB_CONNECTION_STRING: "Server=db,1433;Initial Catalog=Octopus;Persist Security Info=False;User=sa;Password=${SA_PASSWORD};MultipleActiveResultSets=False;Connection Timeout=30;"
+    ports:
+    - 1322:8080
+    - 10943:10943
+    depends_on:
+      db:
+        condition: service_healthy
+    stdin_open: true
